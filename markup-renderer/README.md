@@ -2,24 +2,25 @@
 
 A modern, lightweight Markdown renderer for React that supports:
 
-- Code blocks with syntax highlighting and copy button
-- Tables
-- Blockquotes
-- Alerts / callouts
-- Lists, headers, and inline formatting (bold, italic, links, etc.)
-- Dark mode support
+## 📄 Markdown Support
 
-Built with [React Syntax Highlighter](https://github.com/react-syntax-highlighter/react-syntax-highlighter) and Tailwind CSS-friendly styles.
+You can see a demo [here](https://markup-renderer.asigdel.com.np/).
 
----
-
-## ✨ Features
-
-- 📦 Zero-config drop-in Markdown support
-- 🎨 Syntax highlighting with auto dark/light theme detection
-- ⚠️ GitHub-style alert blocks
-- 📋 Code copy button with feedback
-- 🧼 Clean and accessible markup
+| Feature                             | Supported                              |
+| ----------------------------------- | -------------------------------------- |
+| Headings                            | ✅                                     |
+| Paragraphs                          | ✅                                     |
+| Inline code                         | ✅                                     |
+| Code blocks                         | ✅                                     |
+| Tables                              | ✅                                     |
+| Blockquotes                         | ✅                                     |
+| GitHub Alerts                       | ✅ (`> [!NOTE]`, `> [!WARNING]`, etc.) |
+| Lists                               | ✅                                     |
+| Links                               | ✅                                     |
+| Image                               | ✅                                     |
+| Emphasis (bold, italic, bolditalic) | ✅                                     |
+| Strikethrough                       | ✅                                     |
+| Horizontal rule                     | ✅                                     |
 
 ---
 
@@ -53,53 +54,52 @@ console.log(hello);
 
 export default function App() {
   return (
-    <div className="prose dark:prose-invert max-w-none">
-      <MarkupRenderer content={markdownContent} isDark={false} />
-    </div>
+    <MarkupRenderer
+      content={markdownContent}
+    />
   );
 }
 ```
-
-> 🔁 The `isDark` prop is used to toggle themes (e.g. for SSR); otherwise, it reads from `localStorage.theme`.
 
 ---
 
 ## 🧩 Props
 
-| Prop      | Type      | Required | Description              |
-| --------- | --------- | -------- | ------------------------ |
-| `content` | `string`  | Yes      | Raw markdown string      |
-| `isDark`  | `boolean` | Yes      | Enables dark mode styles |
-
----
-
-## 📄 Markdown Support
-
-| Feature                 | Supported                              |
-| ----------------------- | -------------------------------------- |
-| Headings                | ✅                                     |
-| Paragraphs              | ✅                                     |
-| Inline code             | ✅                                     |
-| Code blocks             | ✅                                     |
-| Tables                  | ✅                                     |
-| Blockquotes             | ✅                                     |
-| GitHub Alerts           | ✅ (`> [!NOTE]`, `> [!WARNING]`, etc.) |
-| Lists                   | ✅                                     |
-| Links                   | ✅                                     |
-| Emphasis (bold, italic) | ✅                                     |
-| Strikethrough           | ✅                                     |
-| Horizontal rule         | ✅                                     |
+| Prop           | Type      | Required | Description                                                               |
+| -------------- | --------- | -------- | ------------------------------------------------------------------------- |
+| `content`      | `string`  | Yes      | The Markdown text you want to render.                                     |
+| `isDark`       | `boolean` | No       | If `true`, renders the content in dark mode; if `false`, uses light mode. |
+| `primaryColor` | `string`  | No       | Sets the main accent color for elements.                                  |
 
 ---
 
 ## 🎨 Theming
 
-- Auto-detects light/dark mode via `localStorage.theme`
-- Uses `prism` for light theme and `atomDark` for dark theme
-- Style your layout with Tailwind classes like `prose` or `max-w-none` as needed
+To support your code for dark and light mode you should pass isDark props:
+
+- for only light mode you can leave isDark props. For only dark mode you can use `isDark` props. fully funcitonal dark mode with toggling is :
+
+```tsx
+import MarkupRenderer from "@ashish-ui/markup-renderer";
+import { useState } from "react";
+
+interface Props {
+  content: string;
+  theme: "dark" | "light";
+}
+
+export default function Display({ content, theme }: Props) {
+  return (
+    <MarkupRenderer
+      content={content}
+      isDark={theme === "dark" ? true : false}
+    />
+  );
+}
+```
 
 ---
 
 ## 📃 License
 
-MIT © [Ashish](https://github.com/your-github-profile)
+MIT © [Ashish](https://github.com/ashishsigdel)

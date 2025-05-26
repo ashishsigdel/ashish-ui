@@ -4,37 +4,44 @@ import {
   atomDark,
   prism,
 } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { getStyles } from "./styles";
 
 interface Props {
   content: string | undefined;
-  isDark: boolean;
+  isDark?: boolean;
+  primaryColor?: string;
+  noMarginInParagraphs?: boolean;
 }
 
 type CodeBlockProps = {
   children: string;
   language?: string;
   isDark: boolean;
+  styles: any;
 };
 
 type InlineCodeProps = {
   children: string;
+  styles: any;
 };
 
 type TableProps = {
   children: React.ReactNode;
+  styles: any;
 };
 
 type BlockquoteProps = {
   children: React.ReactNode;
+  styles: any;
 };
 
 type AlertProps = {
   type?: "info" | "warning" | "error" | "success";
   children: React.ReactNode;
+  styles: any;
 };
 
-// Code block component with syntax highlighting simulation and copy functionality
-const CodeBlock = ({ children, language, isDark }: CodeBlockProps) => {
+const CodeBlock = ({ children, language, isDark, styles }: CodeBlockProps) => {
   const [copied, setCopied] = useState(false);
   const theme = isDark ? "dark" : "light";
 
@@ -45,17 +52,23 @@ const CodeBlock = ({ children, language, isDark }: CodeBlockProps) => {
   };
 
   return (
-    <div className="relative group">
-      <div className="flex items-center justify-between px-4 py-2 bg-gray-200 dark:bg-gray-800 border-b border-white dark:border-gray-700 rounded-t-lg">
-        <span className="text-sm text-gray-600 dark:text-gray-400 font-mono">
-          {language || "text"}
+    <div style={styles.codeBlock}>
+      <div style={styles.codeHeader}>
+        <span
+          style={{
+            ...styles.languageLabel,
+          }}
+        >
+          {language || "code"}
         </span>
         <button
           onClick={handleCopy}
-          className="transition-opacity duration-200 p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
+          style={{
+            ...styles.copyButton,
+          }}
         >
           {copied ? (
-            <span className="flex item-center gap-2 text-sm">
+            <span style={styles.copyText}>
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="14"
@@ -66,14 +79,14 @@ const CodeBlock = ({ children, language, isDark }: CodeBlockProps) => {
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                className="text-green-600"
+                style={{ color: "#16a34a" }}
               >
                 <polyline points="20 6 9 17 4 12" />
               </svg>
               Copied
             </span>
           ) : (
-            <span className="flex item-center gap-2 text-sm">
+            <span style={styles.copyText}>
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="14"
@@ -108,50 +121,143 @@ const CodeBlock = ({ children, language, isDark }: CodeBlockProps) => {
   );
 };
 
-// Inline code component
-const InlineCode = ({ children }: InlineCodeProps) => (
-  <code className="px-2 py-1 bg-gray-100 dark:bg-gray-900 rounded text-sm font-mono">
-    {children}
-  </code>
+const InlineCode = ({ children, styles }: InlineCodeProps) => (
+  <code style={styles.inlineCode}>{children}</code>
 );
 
-// Table component
-const Table = ({ children }: TableProps) => (
-  <div className="overflow-x-auto my-4">
-    <table className="min-w-full border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-      {children}
-    </table>
+const Table = ({ children, styles }: TableProps) => (
+  <div style={styles.tableContainer}>
+    <table style={styles.table}>{children}</table>
   </div>
 );
 
-// Blockquote component
-const Blockquote = ({ children }: BlockquoteProps) => (
-  <blockquote className="border-l-4 border-blue-500 pl-4 py-2 my-4 bg-blue-50 dark:bg-blue-900/20 text-gray-700 dark:text-gray-300 italic">
-    {children}
-  </blockquote>
+const Blockquote = ({ children, styles }: BlockquoteProps) => (
+  <blockquote style={styles.blockquote}>{children}</blockquote>
 );
 
-// Alert/Note component
-const Alert = ({ type = "info", children }: AlertProps) => {
-  const styles = {
-    info: "border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200",
-    warning:
-      "border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200",
-    error:
-      "border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20 text-red-800 dark:text-red-200",
-    success:
-      "border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20 text-green-800 dark:text-green-200",
+const Alert = ({ type = "info", children, styles }: AlertProps) => {
+  const baseAlertStyle = {
+    ...styles.alert,
+    borderLeftWidth: "4px",
+    borderLeftStyle: "solid",
   };
 
-  return (
-    <div className={`border-l-4 p-4 my-4 rounded-r-lg ${styles[type]}`}>
-      {children}
-    </div>
-  );
+  const alertStyles = {
+    info: {
+      ...baseAlertStyle,
+      ...styles.alertInfo,
+    },
+    warning: {
+      ...baseAlertStyle,
+      ...styles.alertWarning,
+    },
+    error: {
+      ...baseAlertStyle,
+      ...styles.alertError,
+    },
+    success: {
+      ...baseAlertStyle,
+      ...styles.alertSuccess,
+    },
+  };
+
+  return <div style={alertStyles[type]}>{children}</div>;
 };
 
-// Main markdown parser
-const parseMarkdown = (content: string, isDark: boolean) => {
+const parseList = (
+  lines: string[],
+  startIndex: number,
+  styles: any,
+  currentIndent: number = 0
+): { element: React.ReactNode; nextIndex: number } => {
+  const items: { content: React.ReactNode; nested?: React.ReactNode }[] = [];
+  let i = startIndex;
+  let isOrdered: boolean | null = null;
+
+  const getIndent = (line: string) => line.match(/^\s*/)?.[0].length ?? 0;
+  const listRegex = /^(\s*)([-+*]|\d+\.)\s+/;
+
+  while (i < lines.length) {
+    const line = lines[i];
+    if (!line.trim()) {
+      i++;
+      continue;
+    }
+
+    const match = line.match(listRegex);
+    const indent = getIndent(line);
+
+    // If no match or indent is less than current, we're done with this list level
+    if (!match || indent < currentIndent) break;
+
+    const [, , marker] = match;
+
+    // Check if this line is at the next nesting level
+    if (indent > currentIndent) {
+      // This is a nested list - attach it to the previous item
+      if (items.length > 0) {
+        const { element: nested, nextIndex } = parseList(
+          lines,
+          i,
+          styles,
+          indent
+        );
+        // Attach nested list to the last item
+        const lastItem = items[items.length - 1];
+        items[items.length - 1] = { ...lastItem, nested };
+        i = nextIndex;
+      } else {
+        // No previous item to attach to - skip this line
+        i++;
+      }
+      continue;
+    }
+
+    // Determine isOrdered only once, based on the first valid list item marker at current level
+    if (isOrdered === null) {
+      isOrdered = /^\d+\./.test(marker);
+    }
+
+    // Validate that the marker type is consistent with the list type
+    const currentIsOrdered = /^\d+\./.test(marker);
+    if (currentIsOrdered !== isOrdered) {
+      // Marker type changed - this might be a different list
+      break;
+    }
+
+    const content = line.replace(listRegex, "");
+    items.push({
+      content: parseInlineMarkdown(content.trim(), styles),
+    });
+
+    i++;
+  }
+
+  // Don't create empty lists
+  if (items.length === 0) {
+    return { element: null, nextIndex: i };
+  }
+
+  const ListTag = isOrdered ? "ol" : "ul";
+
+  const element = React.createElement(
+    ListTag,
+    {
+      key: startIndex,
+      style: isOrdered ? styles.orderedList : styles.unorderedList,
+    },
+    items.map((item, idx) => (
+      <li key={idx} style={styles.listItem}>
+        {item.content}
+        {item.nested}
+      </li>
+    ))
+  );
+
+  return { element, nextIndex: i };
+};
+
+const parseMarkdown = (content: string, isDark: boolean, styles: any) => {
   const lines = content.split("\n");
   const elements: React.ReactNode[] = [];
   let i = 0;
@@ -159,13 +265,11 @@ const parseMarkdown = (content: string, isDark: boolean) => {
   while (i < lines.length) {
     const line = lines[i];
 
-    // Skip empty lines
     if (!line.trim()) {
       i++;
       continue;
     }
 
-    // Headers
     if (line.startsWith("#")) {
       const level = line.match(/^#+/)?.[0]?.length || 1;
       const text = line.replace(/^#+\s*/, "");
@@ -176,13 +280,18 @@ const parseMarkdown = (content: string, isDark: boolean) => {
         | "h4"
         | "h5"
         | "h6";
-      const sizes = {
-        h1: "text-3xl font-bold mb-4 mt-6 pb-2 border-b border-gray-200 dark:border-gray-700",
-        h2: "text-2xl font-bold mb-3 mt-5 pb-2 border-b border-gray-200 dark:border-gray-700",
-        h3: "text-xl font-bold mb-3 mt-4",
-        h4: "text-lg font-bold mb-2 mt-3",
-        h5: "text-base font-bold mb-2 mt-3",
-        h6: "text-sm font-bold mb-2 mt-3",
+
+      const headingStyles = {
+        h1: { ...styles.heading, ...styles.h1 },
+        h2: { ...styles.heading, ...styles.h2 },
+        h3: { ...styles.heading, ...styles.h3 },
+        h4: { ...styles.heading, ...styles.h4 },
+        h5: { ...styles.heading, ...styles.h5 },
+        h6: { ...styles.heading, ...styles.h6 },
+      };
+
+      const currentHeadingStyle = {
+        ...headingStyles[HeaderTag],
       };
 
       elements.push(
@@ -190,18 +299,15 @@ const parseMarkdown = (content: string, isDark: boolean) => {
           HeaderTag,
           {
             key: i,
-            className: `${sizes[HeaderTag]} text-gray-900 dark:text-white`,
+            style: currentHeadingStyle,
           },
-          text
+          parseInlineMarkdown(text, styles)
         )
       );
-    }
-
-    // Code blocks
-    else if (line.startsWith("```")) {
+    } else if (line.startsWith("```")) {
       const language = line.replace("```", "").trim();
       const codeLines = [];
-      i++; // Skip opening ```
+      i++;
 
       while (i < lines.length && !lines[i].startsWith("```")) {
         codeLines.push(lines[i]);
@@ -209,22 +315,18 @@ const parseMarkdown = (content: string, isDark: boolean) => {
       }
 
       elements.push(
-        <div key={i} className="my-4">
-          <CodeBlock language={language} isDark={isDark}>
+        <div key={i} style={{ margin: "1rem 0" }}>
+          <CodeBlock language={language} isDark={isDark} styles={styles}>
             {codeLines.join("\n")}
           </CodeBlock>
         </div>
       );
-    }
-
-    // Tables
-    else if (line.includes("|") && line.trim().startsWith("|")) {
+    } else if (line.includes("|") && line.trim().startsWith("|")) {
       const tableRows = [];
       let j = i;
 
       while (j < lines.length && lines[j].includes("|")) {
         if (!lines[j].trim().match(/^[\|\s\-]+$/)) {
-          // Skip separator rows
           tableRows.push(lines[j]);
         }
         j++;
@@ -238,13 +340,19 @@ const parseMarkdown = (content: string, isDark: boolean) => {
           .filter((h) => h);
 
         elements.push(
-          <Table key={i}>
+          <Table key={i} styles={styles}>
             <thead>
-              <tr className="bg-gray-50 dark:bg-gray-800">
+              <tr
+                style={{
+                  ...styles.tableHeaderRow,
+                }}
+              >
                 {headers.map((header, idx) => (
                   <th
                     key={idx}
-                    className="px-4 py-2 text-left font-semibold text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700"
+                    style={{
+                      ...styles.tableHeaderCell,
+                    }}
                   >
                     {header}
                   </th>
@@ -260,14 +368,18 @@ const parseMarkdown = (content: string, isDark: boolean) => {
                 return (
                   <tr
                     key={rowIdx}
-                    className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                    style={{
+                      ...styles.tableRow,
+                    }}
                   >
                     {cells.map((cell, cellIdx) => (
                       <td
                         key={cellIdx}
-                        className="px-4 py-2 text-gray-700 dark:text-gray-300"
+                        style={{
+                          ...styles.tableCell,
+                        }}
                       >
-                        {parseInlineMarkdown(cell)}
+                        {parseInlineMarkdown(cell, styles)}
                       </td>
                     ))}
                   </tr>
@@ -276,53 +388,16 @@ const parseMarkdown = (content: string, isDark: boolean) => {
             </tbody>
           </Table>
         );
-        i = j - 1; // Adjust index
+        i = j - 1;
       }
-    }
-
-    // Lists
-    else if (line.match(/^[\s]*[-\*\+]\s/) || line.match(/^[\s]*\d+\.\s/)) {
-      const listItems = [];
-      let j = i;
-      const isOrdered = line.match(/^\s*\d+\.\s/);
-
-      const listRegex = isOrdered ? /^[\s]*\d+\.\s/ : /^[\s]*[-\*\+]\s/;
-
-      while (
-        j < lines.length &&
-        (lines[j].match(listRegex) || lines[j].trim() === "")
-      ) {
-        if (lines[j].trim()) {
-          const text = lines[j].replace(/^[\s]*(?:[-\*\+]|\d+\.)\s/, "");
-          listItems.push(text);
-        }
-        j++;
-      }
-
-      const ListTag = isOrdered ? "ol" : "ul";
-      const listClass = isOrdered
-        ? "list-decimal list-inside"
-        : "list-disc list-inside";
-
-      elements.push(
-        React.createElement(
-          ListTag,
-          {
-            key: i,
-            className: `${listClass} my-4 space-y-1 text-gray-700 dark:text-gray-300 ml-4`,
-          },
-          listItems.map((item, idx) => (
-            <li key={idx} className="leading-relaxed">
-              {parseInlineMarkdown(item)}
-            </li>
-          ))
-        )
-      );
-      i = j - 1;
-    }
-
-    // Blockquotes
-    else if (line.startsWith(">")) {
+    } else if (/^\s*([-+*]|\d+\.)\s+/.test(line)) {
+      const { element, nextIndex } = parseList(lines, i, styles);
+      elements.push(element);
+      i = nextIndex - 1;
+    } else if (
+      line.startsWith(">") &&
+      !line.match(/^>\s*\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]/i)
+    ) {
       const quoteLines = [];
       let j = i;
 
@@ -331,12 +406,13 @@ const parseMarkdown = (content: string, isDark: boolean) => {
         j++;
       }
 
-      elements.push(<Blockquote key={i}>{quoteLines.join(" ")}</Blockquote>);
+      elements.push(
+        <Blockquote key={i} styles={styles}>
+          {quoteLines.join(" ")}
+        </Blockquote>
+      );
       i = j - 1;
-    }
-
-    // Alerts/Notes (GitHub style)
-    else if (line.match(/^>\s*\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]/i)) {
+    } else if (line.match(/^>\s*\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]/i)) {
       const match = line.match(
         /^>\s*\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]/i
       );
@@ -357,32 +433,30 @@ const parseMarkdown = (content: string, isDark: boolean) => {
       }
 
       elements.push(
-        <Alert key={i} type={alertType}>
-          <strong className="capitalize">{type}:</strong>{" "}
-          {parseInlineMarkdown(content)}
+        <Alert key={i} type={alertType} styles={styles}>
+          <strong style={{ textTransform: "capitalize" }}>{type}:</strong>{" "}
+          {parseInlineMarkdown(content, styles)}
         </Alert>
       );
       i = j - 1;
-    }
-
-    // Horizontal rules
-    else if (line.match(/^[\-\*\_]{3,}$/)) {
+    } else if (line.match(/^[\-\*\_]{3,}$/)) {
       elements.push(
         <hr
           key={i}
-          className="my-6 border-t border-gray-200 dark:border-gray-700"
+          style={{
+            ...styles.horizontalRule,
+          }}
         />
       );
-    }
-
-    // Regular paragraphs
-    else {
+    } else {
       elements.push(
         <p
           key={i}
-          className="mb-4 leading-relaxed text-gray-700 dark:text-gray-300"
+          style={{
+            ...styles.paragraph,
+          }}
         >
-          {parseInlineMarkdown(line)}
+          {parseInlineMarkdown(line, styles)}
         </p>
       );
     }
@@ -393,92 +467,144 @@ const parseMarkdown = (content: string, isDark: boolean) => {
   return elements;
 };
 
-// Parse inline markdown (bold, italic, code, links)
-const parseInlineMarkdown = (text: string) => {
+const parseInlineMarkdown = (text: string, styles: any): React.ReactNode[] => {
   const patterns = [
     { regex: /```([^`]+)```/, type: "code" },
+    { regex: /\^\^([^^]+)\^\^/, type: "superscript" },
+    { regex: /~([^~]+)~/, type: "subscript" },
     { regex: /\*\*\*([^*]+)\*\*\*/, type: "bolditalic" },
+    { regex: /___([^_]+)___/, type: "bolditalic" },
     { regex: /\*\*([^*]+)\*\*/, type: "bold" },
+    { regex: /__([^_]+)__/, type: "bold" },
     { regex: /\*([^*]+)\*/, type: "italic" },
-    { regex: /___([^*]+)___/, type: "bolditalic" },
-    { regex: /__([^*]+)__/, type: "bold" },
-    { regex: /_([^*]+)_/, type: "italic" },
+    { regex: /_([^_]+)_/, type: "italic" },
     { regex: /~~([^~]+)~~/, type: "strikethrough" },
     {
       regex: /\[([^\]]+)\]\(([^)]+)\)/,
       type: "link",
     },
+    {
+      regex: /!\[([^\]]*)\]\(([^)]+)\)/,
+      type: "image",
+    },
   ];
 
   const elements: React.ReactNode[] = [];
 
-  while (text) {
-    let matched = false;
+  let current = text;
 
-    for (const { regex, type } of patterns) {
-      const match = regex.exec(text);
-      if (match) {
-        matched = true;
+  while (current.length > 0) {
+    let earliestMatchIndex = current.length;
+    let selectedPattern: (typeof patterns)[0] | null = null;
+    let selectedMatch: RegExpExecArray | null = null;
 
-        const [fullMatch, ...groups] = match;
-        const before = text.slice(0, match.index);
-        const after = text.slice(match.index + fullMatch.length);
-
-        if (before) elements.push(before);
-
-        switch (type) {
-          case "code":
-            elements.push(
-              <InlineCode key={elements.length}>{groups[0]}</InlineCode>
-            );
-            break;
-          case "bold":
-            elements.push(<strong key={elements.length}>{groups[0]}</strong>);
-            break;
-          case "italic":
-            elements.push(<em key={elements.length}>{groups[0]}</em>);
-            break;
-          case "bolditalic":
-            elements.push(
-              <strong key={elements.length}>
-                <em key={elements.length}>{groups[0]}</em>
-              </strong>
-            );
-            break;
-          case "strikethrough":
-            elements.push(<del key={elements.length}>{groups[0]}</del>);
-            break;
-          case "link":
-            elements.push(
-              <a
-                key={elements.length}
-                href={groups[1]}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-600 dark:text-blue-400 hover:underline"
-              >
-                {groups[0]}
-              </a>
-            );
-            break;
-        }
-
-        text = after;
-        break;
+    for (const pattern of patterns) {
+      const match = pattern.regex.exec(current);
+      if (match && match.index < earliestMatchIndex) {
+        earliestMatchIndex = match.index;
+        selectedPattern = pattern;
+        selectedMatch = match;
       }
     }
 
-    if (!matched) {
-      elements.push(text);
+    if (!selectedMatch || !selectedPattern) {
+      elements.push(current);
       break;
     }
+
+    // Add text before the match
+    if (selectedMatch.index > 0) {
+      elements.push(current.slice(0, selectedMatch.index));
+    }
+
+    const [fullMatch, ...groups] = selectedMatch;
+    const remaining = current.slice(selectedMatch.index + fullMatch.length);
+
+    // Add the matched styled element
+    switch (selectedPattern.type) {
+      case "code":
+        elements.push(
+          <InlineCode key={elements.length} styles={styles}>
+            {groups[0]}
+          </InlineCode>
+        );
+        break;
+      case "superscript":
+        elements.push(<sup key={elements.length}>{groups[0]}</sup>);
+        break;
+      case "subscript":
+        elements.push(<sub key={elements.length}>{groups[0]}</sub>);
+        break;
+      case "bold":
+        elements.push(<strong key={elements.length}>{groups[0]}</strong>);
+        break;
+      case "italic":
+        elements.push(<em key={elements.length}>{groups[0]}</em>);
+        break;
+      case "bolditalic":
+        elements.push(
+          <strong key={elements.length}>
+            <em>{groups[0]}</em>
+          </strong>
+        );
+        break;
+      case "strikethrough":
+        elements.push(<del key={elements.length}>{groups[0]}</del>);
+        break;
+      case "link":
+        elements.push(
+          <MarkdownLink key={elements.length} href={groups[1]} styles={styles}>
+            {groups[0]}
+          </MarkdownLink>
+        );
+        break;
+      case "image":
+        elements.push(
+          <img
+            key={elements.length}
+            src={groups[1]}
+            alt={groups[0]}
+            style={styles.image}
+          />
+        );
+        break;
+    }
+
+    current = remaining;
   }
 
   return elements;
 };
+const MarkdownLink = ({ href, children, styles }: any) => {
+  const [hover, setHover] = useState(false);
 
-export default function MarkupRenderer({ content, isDark = false }: Props) {
   return (
-    <div className="max-w-none">{parseMarkdown(content || "", isDark)}</div>
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      style={{
+        ...styles.link,
+        ...(hover ? styles.linkHover : {}),
+      }}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+    >
+      {children}
+    </a>
+  );
+};
+
+export default function MarkupRenderer({
+  content,
+  isDark = false,
+  primaryColor = "#ffffff",
+  noMarginInParagraphs = false,
+}: Props) {
+  const styles = getStyles(primaryColor, isDark, noMarginInParagraphs);
+  return (
+    <div style={styles.container}>
+      {parseMarkdown(content || "", isDark, styles)}
+    </div>
   );
 }
