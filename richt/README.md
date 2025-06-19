@@ -60,3 +60,11 @@ The API response for image uploads should look like:
   }
 }
 ```
+
+### Also you can render your html code
+
+```tsx
+import { HtmlFormatter } from "richt-editor";
+
+<HtmlFormatter content={content} theme={theme} />;
+```

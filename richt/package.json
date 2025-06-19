@@ -1,6 +1,6 @@
 {
   "name": "richt-editor",
-  "version": "1.0.9",
+  "version": "2.0.0",
   "description": "Richt is awesome and usefully rich text editor for react.",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -16,7 +16,8 @@
     "react",
     "rich-text",
     "editor",
-    "markdown"
+    "markdown",
+    "viewer"
   ],
   "author": "Ashish",
   "license": "MIT",
@@ -26,9 +27,12 @@
   },
   "devDependencies": {
     "@types/react": "^19.1.6",
+    "@types/react-syntax-highlighter": "^15.5.13",
+    "react-syntax-highlighter": "^15.6.1",
     "typescript": "^5.8.3"
   },
   "dependencies": {
+    "html-react-parser": "^5.2.5",
     "tsup": "^8.5.0"
   }
 }

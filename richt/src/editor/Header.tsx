@@ -29,6 +29,7 @@ interface HeaderProps {
   darkColorPanelText?: string;
   lightBorderColor?: string;
   darkBorderColor?: string;
+  handleCodeBlock: (language?: string) => void;
 }
 
 export const Header = ({
@@ -52,6 +53,7 @@ export const Header = ({
   darkColorPanelText,
   lightBorderColor,
   darkBorderColor,
+  handleCodeBlock,
 }: HeaderProps) => {
   return (
     <div className="toolbar-container">
@@ -183,6 +185,7 @@ export const Header = ({
         </div>
 
         <div className="toolbar-group">
+          {/* Toggle code block */}
           <button
             onClick={() => exec("formatBlock", "pre")}
             title="Code Block"
@@ -192,6 +195,36 @@ export const Header = ({
           >
             {Icons.code}
           </button>
+          <select
+            onChange={(e) => {
+              const value = e.target.value;
+              if (!value) return;
+
+              if (value === "custom") {
+                const customLang = prompt(
+                  "Enter custom language name (e.g. kotlin, rust):"
+                );
+                if (customLang && customLang.trim()) {
+                  handleCodeBlock(customLang.trim().toLowerCase());
+                }
+              } else {
+                handleCodeBlock(value);
+              }
+              e.target.value = "";
+            }}
+            defaultValue=""
+            className="format-select"
+          >
+            <option value="">Language</option>
+            <option value="javascript">JavaScript</option>
+            <option value="python">Python</option>
+            <option value="ts">TypeScript</option>
+            <option value="c">C</option>
+            <option value="cpp">C++</option>
+            <option value="custom">Custom</option>
+          </select>
+
+          {/* Inline Code Button */}
           <button
             onClick={() => exec("inlineCode")}
             title="Inline Code"

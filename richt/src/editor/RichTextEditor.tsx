@@ -5,107 +5,146 @@ import Footer from "./Footer";
 import { Icons } from "./exportIcons";
 
 interface TableDialogProps {
-  onInsert: (rows: number, cols: number) => void;
+  onInsert: (rows: number, cols: number, includeHeader: boolean) => void;
   onClose: () => void;
 }
 
 const TableDialog = ({ onInsert, onClose }: TableDialogProps) => {
   const [rows, setRows] = useState(3);
   const [cols, setCols] = useState(3);
+  const [includeHeader, setIncludeHeader] = useState(true);
   const [hoveredCells, setHoveredCells] = useState<{
     row: number;
     col: number;
   } | null>(null);
 
   const renderTablePreview = () => (
-    <div className="table-preview">
+    <div style={{ marginBottom: "16px" }}>
       <div
-        className="table-grid"
         style={{
-          gridTemplateRows: `repeat(${rows}, 20px)`,
-          gridTemplateColumns: `repeat(${cols}, 20px)`,
+          border: "1px solid #d1d5db",
+          borderRadius: "4px",
+          overflow: "hidden",
         }}
       >
-        {Array.from({ length: rows * cols }).map((_, index) => {
-          const row = Math.floor(index / cols);
-          const col = index % cols;
-          const isHovered =
-            hoveredCells && row < hoveredCells.row && col < hoveredCells.col;
+        <table
+          style={{
+            width: "100%",
+            borderCollapse: "collapse",
+          }}
+        >
+          {includeHeader && (
+            <thead>
+              <tr style={{ backgroundColor: "#f3f4f6" }}>
+                {Array.from({ length: cols }).map((_, colIndex) => (
+                  <th
+                    key={colIndex}
+                    style={{
+                      border: "1px solid #d1d5db",
+                      padding: "8px",
+                      fontSize: "12px",
+                      fontWeight: "600",
+                      color: "#374151",
+                      width: "40px",
+                      height: "20px",
+                    }}
+                  >
+                    H{colIndex + 1}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+          )}
+          <tbody>
+            {Array.from({ length: rows }).map((_, rowIndex) => (
+              <tr key={rowIndex}>
+                {Array.from({ length: cols }).map((_, colIndex) => {
+                  const isHovered =
+                    hoveredCells &&
+                    rowIndex < hoveredCells.row &&
+                    colIndex < hoveredCells.col;
 
-          return (
-            <div
-              key={index}
-              className={`table-cell ${isHovered ? "hovered" : ""}`}
-              onMouseEnter={() =>
-                setHoveredCells({ row: row + 1, col: col + 1 })
-              }
-              onClick={() => {
-                setRows(row + 1);
-                setCols(col + 1);
-              }}
-            />
-          );
-        })}
+                  return (
+                    <td
+                      key={colIndex}
+                      style={{
+                        border: "1px solid #d1d5db",
+                        padding: "8px",
+                        fontSize: "12px",
+                        textAlign: "center",
+                        cursor: "pointer",
+                        transition: "background-color 0.2s ease",
+                        backgroundColor: isHovered ? "#dbeafe" : "#ffffff",
+                        width: "40px",
+                        height: "20px",
+                      }}
+                      onMouseEnter={() =>
+                        setHoveredCells({
+                          row: rowIndex + 1,
+                          col: colIndex + 1,
+                        })
+                      }
+                      onMouseOver={(e) => {
+                        if (!isHovered) {
+                          e.currentTarget.style.backgroundColor = "#f9fafb";
+                        }
+                      }}
+                      onMouseOut={(e) => {
+                        if (!isHovered) {
+                          e.currentTarget.style.backgroundColor = "#ffffff";
+                        }
+                      }}
+                      onClick={() => {
+                        setRows(rowIndex + 1);
+                        setCols(colIndex + 1);
+                      }}
+                    >
+                      {rowIndex + 1},{colIndex + 1}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
-      <div className="table-size">
-        {rows} × {cols}
+      <div
+        style={{
+          textAlign: "center",
+          fontSize: "14px",
+          color: "#6b7280",
+          marginTop: "8px",
+        }}
+      >
+        {includeHeader ? `${rows} × ${cols} (+ header)` : `${rows} × ${cols}`}
       </div>
     </div>
   );
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        top: "0",
-        left: "0",
-        right: "0",
-        bottom: "0",
-        backgroundColor: "rgba(0, 0, 0, 0.5)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        zIndex: "1000",
-      }}
-    >
-      <div
-        style={{
-          backgroundColor: "white",
-          borderRadius: "8px",
-          padding: "20px",
-          width: "320px",
-          boxShadow:
-            "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            marginBottom: "16px",
-            fontSize: "18px",
-            fontWeight: "600",
-            color: "#1e293b",
-          }}
-        >
-          <span style={{ marginRight: "8px" }}>{Icons.table}</span>
+    <div className="modal-overlay">
+      <div className="modal-content">
+        <div className="modal-title">
+          {Icons.table}
           Insert Table
         </div>
 
         <div
           style={{
-            display: "flex",
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
             gap: "16px",
             marginBottom: "16px",
           }}
         >
-          <div style={{ flex: 1 }}>
+          <div>
             <label
               style={{
                 display: "block",
-                marginBottom: "4px",
                 fontSize: "14px",
-                color: "#64748b",
+                fontWeight: "500",
+                color: "#374151",
+                marginBottom: "4px",
               }}
             >
               Rows:
@@ -120,17 +159,33 @@ const TableDialog = ({ onInsert, onClose }: TableDialogProps) => {
                   Math.max(1, Math.min(10, parseInt(e.target.value) || 1))
                 )
               }
-              className="input-field"
+              style={{
+                flex: 1,
+                padding: "8px 12px",
+                border: "1px solid #d1d5db",
+                borderRadius: "6px",
+                outline: "none",
+                fontSize: "14px",
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = "#3b82f6";
+                e.target.style.boxShadow = "0 0 0 2px rgba(59, 130, 246, 0.2)";
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = "#d1d5db";
+                e.target.style.boxShadow = "none";
+              }}
             />
           </div>
 
-          <div style={{ flex: 1 }}>
+          <div>
             <label
               style={{
                 display: "block",
-                marginBottom: "4px",
                 fontSize: "14px",
-                color: "#64748b",
+                fontWeight: "500",
+                color: "#374151",
+                marginBottom: "4px",
               }}
             >
               Columns:
@@ -145,9 +200,46 @@ const TableDialog = ({ onInsert, onClose }: TableDialogProps) => {
                   Math.max(1, Math.min(10, parseInt(e.target.value) || 1))
                 )
               }
-              className="input-field"
+              style={{
+                flex: 1,
+                padding: "8px 12px",
+                border: "1px solid #d1d5db",
+                borderRadius: "6px",
+                outline: "none",
+                fontSize: "14px",
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = "#3b82f6";
+                e.target.style.boxShadow = "0 0 0 2px rgba(59, 130, 246, 0.2)";
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = "#d1d5db";
+                e.target.style.boxShadow = "none";
+              }}
             />
           </div>
+        </div>
+
+        <div style={{ marginBottom: "16px" }}>
+          <label
+            style={{ display: "flex", alignItems: "center", cursor: "pointer" }}
+          >
+            <input
+              type="checkbox"
+              checked={includeHeader}
+              onChange={(e) => setIncludeHeader(e.target.checked)}
+              style={{ marginRight: "8px" }}
+            />
+            <span
+              style={{
+                fontSize: "14px",
+                fontWeight: "500",
+                color: "#374151",
+              }}
+            >
+              Include header row
+            </span>
+          </label>
         </div>
 
         {renderTablePreview()}
@@ -162,21 +254,26 @@ const TableDialog = ({ onInsert, onClose }: TableDialogProps) => {
         >
           <button
             onClick={onClose}
-            style={{
-              padding: "8px 16px",
-              backgroundColor: "#f1f5f9",
-              color: "#64748b",
-              border: "none",
-              borderRadius: "4px",
-              cursor: "pointer",
-              fontSize: "14px",
-              fontWeight: "500",
-              transition: "background-color 0.2s ease",
+            className="btn-secondary"
+            onMouseOver={(e) => {
+              e.currentTarget.style.backgroundColor = "#e2e8f0";
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.backgroundColor = "#f1f5f9";
             }}
           >
             Cancel
           </button>
-          <button onClick={() => onInsert(rows, cols)} className="btn-primary">
+          <button
+            onClick={() => onInsert(rows, cols, includeHeader)}
+            className="btn-primary"
+            onMouseOver={(e) => {
+              e.currentTarget.style.backgroundColor = "#2563eb";
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.backgroundColor = "#3b82f6";
+            }}
+          >
             Insert Table
           </button>
         </div>
@@ -184,6 +281,8 @@ const TableDialog = ({ onInsert, onClose }: TableDialogProps) => {
     </div>
   );
 };
+
+export default TableDialog;
 
 interface ImageUploadDialogProps {
   onInsert: (imageUrl: string) => void;
@@ -825,7 +924,8 @@ export const RichTextEditor = ({
     }
 
     if (command === "formatBlock" && value === "pre") {
-      handleCodeBlock();
+      // Default to JavaScript or use a selected language state
+      handleCodeBlock("code"); // or pass selected language
       return;
     }
 
@@ -901,42 +1001,40 @@ export const RichTextEditor = ({
     updateCounts();
   };
 
-  const handleCodeBlock = () => {
+  const handleCodeBlock = (language = "code") => {
     const selection = window.getSelection();
     if (!selection || !selection.rangeCount) return;
 
     const range = selection.getRangeAt(0);
     const commonAncestor = range.commonAncestorContainer;
-
-    // Check if we're already in a code block
     const existingPre = commonAncestor.parentElement?.closest("pre");
-    if (existingPre) {
-      // Convert back to paragraph
-      const textContent = existingPre.textContent;
-      const p = document.createElement("p");
-      p.textContent = textContent || "";
-      existingPre.parentNode?.replaceChild(p, existingPre);
 
-      // Update selection
+    if (existingPre) {
+      // Convert <pre><code> back to <p>
+      const textContent = existingPre.textContent || "";
+      const p = document.createElement("p");
+      p.textContent = textContent;
+      existingPre.replaceWith(p);
+
+      // Reset selection
       const newRange = document.createRange();
       newRange.selectNodeContents(p);
       selection.removeAllRanges();
       selection.addRange(newRange);
 
-      // Update formats
       const formats = new Set(activeFormats);
       formats.delete("pre");
       setActiveFormats(formats);
     } else {
-      // Create new code block
+      // Create <pre><code class="language-...">
       const pre = document.createElement("pre");
+      pre.setAttribute("data-language", language);
       const code = document.createElement("code");
+      code.className = `language-${language}`;
 
-      // If no text is selected, create an empty code block
       if (range.collapsed) {
-        code.textContent = "\u200B"; // Zero-width space
+        code.textContent = "\u200B";
       } else {
-        // Get the selected content
         const fragment = range.extractContents();
         code.appendChild(fragment);
       }
@@ -944,21 +1042,21 @@ export const RichTextEditor = ({
       pre.appendChild(code);
       range.insertNode(pre);
 
-      // Place cursor inside the code block
       const newRange = document.createRange();
       if (range.collapsed) {
         newRange.setStart(code.firstChild!, 1);
       } else {
         newRange.selectNodeContents(code);
       }
+
       selection.removeAllRanges();
       selection.addRange(newRange);
 
-      // Update formats
       const formats = new Set(activeFormats);
       formats.add("pre");
       setActiveFormats(formats);
     }
+
     updateCounts();
   };
 
@@ -1109,7 +1207,7 @@ export const RichTextEditor = ({
     }
   };
 
-  const createTable = (rows: number, cols: number) => {
+  const createTable = (rows: number, cols: number, includeHeader: boolean) => {
     try {
       const editor = editorRef.current;
       if (!editor) return;
@@ -1130,13 +1228,36 @@ export const RichTextEditor = ({
 
       // Create table HTML
       const table = document.createElement("table");
-      for (let i = 0; i < rows; i++) {
-        const row = table.insertRow();
+
+      if (includeHeader) {
+        // Create thead section
+        const thead = document.createElement("thead");
+        const headerRow = document.createElement("tr");
+
         for (let j = 0; j < cols; j++) {
-          const cell = row.insertCell();
-          cell.innerHTML = "&nbsp;";
+          const headerCell = document.createElement("th");
+          headerCell.innerHTML = "&nbsp;";
+          headerRow.appendChild(headerCell);
         }
+
+        thead.appendChild(headerRow);
+        table.appendChild(thead);
       }
+
+      // Create tbody section
+      const tbody = document.createElement("tbody");
+
+      for (let i = 0; i < rows; i++) {
+        const row = document.createElement("tr");
+        for (let j = 0; j < cols; j++) {
+          const cell = document.createElement("td");
+          cell.innerHTML = "&nbsp;";
+          row.appendChild(cell);
+        }
+        tbody.appendChild(row);
+      }
+
+      table.appendChild(tbody);
 
       // Insert at current position
       const range = selection?.getRangeAt(0);
@@ -1209,32 +1330,81 @@ export const RichTextEditor = ({
         const newIndex =
           action === "insertColumnLeft" ? cellIndex : cellIndex + 1;
         Array.from(table.rows).forEach((row) => {
-          const newCell = row.insertCell(newIndex);
-          newCell.innerHTML = "&nbsp;";
+          // Check if this row is in thead (header row)
+          const isHeaderRow = row.parentElement?.tagName === "THEAD";
+
+          if (isHeaderRow) {
+            // Create th element for header row
+            const newCell = document.createElement("th");
+            newCell.innerHTML = "&nbsp;";
+            if (newIndex >= row.cells.length) {
+              row.appendChild(newCell);
+            } else {
+              row.insertBefore(newCell, row.cells[newIndex]);
+            }
+          } else {
+            // Create td element for body row
+            const newCell = document.createElement("td");
+            newCell.innerHTML = "&nbsp;";
+            if (newIndex >= row.cells.length) {
+              row.appendChild(newCell);
+            } else {
+              row.insertBefore(newCell, row.cells[newIndex]);
+            }
+          }
         });
         break;
       }
       case "insertRowAbove":
       case "insertRowBelow": {
         const newIndex = action === "insertRowAbove" ? rowIndex : rowIndex + 1;
-        const newRow = table.insertRow(newIndex);
+        const newRow = document.createElement("tr");
+
+        // Check if we're inserting in thead area
+        const isInsertingInHeader =
+          rowIndex === 0 && table.tHead && action === "insertRowAbove";
+        const targetParent = isInsertingInHeader
+          ? table.tHead
+          : table.tBodies[0] || table;
+
+        // Create cells based on the reference row
         for (let i = 0; i < tableRow.cells.length; i++) {
-          const newCell = newRow.insertCell(i);
+          const newCell = isInsertingInHeader
+            ? document.createElement("th")
+            : document.createElement("td");
           newCell.innerHTML = "&nbsp;";
+          newRow.appendChild(newCell);
+        }
+
+        // Insert the row
+        if (action === "insertRowAbove") {
+          if (isInsertingInHeader && targetParent) {
+            targetParent.insertBefore(newRow, targetParent.firstChild);
+          } else {
+            tableRow.parentElement?.insertBefore(newRow, tableRow);
+          }
+        } else {
+          if (tableRow.nextSibling) {
+            tableRow.parentElement?.insertBefore(newRow, tableRow.nextSibling);
+          } else {
+            tableRow.parentElement?.appendChild(newRow);
+          }
         }
         break;
       }
       case "deleteColumn": {
         if (table.rows[0].cells.length > 1) {
           Array.from(table.rows).forEach((row) => {
-            row.deleteCell(cellIndex);
+            if (row.cells[cellIndex]) {
+              row.removeChild(row.cells[cellIndex]);
+            }
           });
         }
         break;
       }
       case "deleteRow": {
         if (table.rows.length > 1) {
-          table.deleteRow(rowIndex);
+          tableRow.parentElement?.removeChild(tableRow);
         }
         break;
       }
@@ -1648,6 +1818,7 @@ export const RichTextEditor = ({
         darkColorPanelText={darkColorPanelText}
         lightBorderColor={lightBorderColor}
         darkBorderColor={darkBorderColor}
+        handleCodeBlock={handleCodeBlock}
       />
 
       {isLinkDialogOpen && (
