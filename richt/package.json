@@ -1,6 +1,6 @@
 {
   "name": "richt-editor",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Richt is awesome and usefully rich text editor for react.",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
